@@ -22,20 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
   // Отправка собственного события в SberAds / Top-100.
-  // Если счетчик еще загружается, вызов ставится в его очередь и выполнится после инициализации.
-  const sendTop100Event = (eventName) => {
-    const send = () => {
-      try {
-        if (window.top100Counter && typeof window.top100Counter.sendCustomVars === 'function') {
-          window.top100Counter.sendCustomVars({ [eventName]: 1 });
-        }
-      } catch (e) {}
-    };
+  // Для целей типа «Собственные события» Top-100 использует trackEvent().
+  // Счетчик загружается асинхронно, поэтому при необходимости коротко ждем его инициализации.
+  const sendTop100Event = (eventName, attemptsLeft = 40) => {
+    try {
+      if (window.top100Counter && typeof window.top100Counter.trackEvent === 'function') {
+        window.top100Counter.trackEvent(eventName, {});
+        return;
+      }
+    } catch (e) {}
 
-    if (window.top100Counter && typeof window.top100Counter.sendCustomVars === 'function') {
-      send();
-    } else {
-      (window._top100q = window._top100q || []).push(send);
+    if (attemptsLeft > 0) {
+      setTimeout(() => sendTop100Event(eventName, attemptsLeft - 1), 250);
     }
   };
 
